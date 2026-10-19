@@ -115,11 +115,28 @@ jobs:
             clang cmake ninja-build pkg-config \
             libgtk-3-dev liblzma-dev libstdc++-12-dev libsecret-1-dev
 
-      - uses: subosito/flutter-action@v2
+      # Flutter 官方未发布 Linux arm64 的 SDK 压缩包（releases_linux.json 无 arm64 归档），
+      # arm64 改为从 git 标签引导；Dart SDK 与引擎的 arm64 产物在 flutter_infra_release 可下载。
+      - name: 安装 Flutter（x64 官方包）
+        if: matrix.arch == 'x64'
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
+
+      - name: 安装 Flutter（arm64 git 引导）
+        if: matrix.arch == 'arm64'
+        run: |
+          git clone --depth 1 --branch "$FLUTTER_VERSION" \
+            https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+
+      - name: 初始化 Flutter（arm64）
+        if: matrix.arch == 'arm64'
+        run: |
+          flutter --version
+          flutter config --no-analytics
 
       - run: flutter pub get
 
