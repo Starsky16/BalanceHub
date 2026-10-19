@@ -58,3 +58,11 @@ flutter run -d windows   # 或 linux / android
 - `core` 层纯 Dart 单测：模型与解析归一化
 - widget 测试：导航壳与页面空态
 - CI 在 ubuntu 上执行 `flutter analyze` 与 `flutter test`
+
+## dev 预发布构建
+
+- 触发：push 到 `dev` 且提交信息含 `[build]`，或在 Actions 中手动 dispatch
+- 产物：Windows x64 便携 zip、Android 通用 APK（调试签名）、Linux x64 / arm64 tar.gz，附 `SHA256SUMS.txt`
+- 发布位置：固定 tag `dev-build` 的 pre-release，每次构建先删后建覆盖
+- 正式发版流水线待 `main` 分支建立后再补
+
