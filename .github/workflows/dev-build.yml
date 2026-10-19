@@ -173,6 +173,7 @@ jobs:
       - name: 覆盖 dev-build 预发布
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           cat > release-notes.md <<EOF
