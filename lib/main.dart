@@ -28,4 +28,9 @@ Future<void> main() async {
   await controller.load();
 
   runApp(BalanceHubApp(controller: controller));
+
+  // 启动后自动刷新一次；界面先渲染，卡片进入加载态。
+  if (controller.accounts.isNotEmpty) {
+    await controller.refreshAll();
+  }
 }
