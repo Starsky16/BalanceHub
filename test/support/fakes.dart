@@ -1,11 +1,13 @@
 import 'package:balancehub/core/models/account_config.dart';
 import 'package:balancehub/core/models/api_credentials.dart';
+import 'package:balancehub/core/models/app_settings.dart';
 import 'package:balancehub/core/models/balance_snapshot.dart';
 import 'package:balancehub/core/models/provider_id.dart';
 import 'package:balancehub/core/providers/balance_exception.dart';
 import 'package:balancehub/core/providers/provider_adapter.dart';
 import 'package:balancehub/core/repository/account_repository.dart';
 import 'package:balancehub/core/repository/credential_store.dart';
+import 'package:balancehub/core/repository/settings_repository.dart';
 
 /// 测试用内存账户仓库。
 class MemoryAccountRepository implements AccountRepository {
@@ -65,5 +67,22 @@ class FakeAdapter implements ProviderAdapter {
       throw error!;
     }
     return snapshot!;
+  }
+}
+
+/// 测试用内存设置仓库。
+class MemorySettingsRepository implements SettingsRepository {
+  AppSettings settings = const AppSettings();
+  bool failOnSave = false;
+
+  @override
+  Future<AppSettings> load() async => settings;
+
+  @override
+  Future<void> save(AppSettings value) async {
+    if (failOnSave) {
+      throw const FormatException('测试写入失败');
+    }
+    settings = value;
   }
 }

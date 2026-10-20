@@ -1,15 +1,18 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
 import '../../core/models/account_config.dart';
 import '../../core/models/api_credentials.dart';
+import '../../core/models/app_settings.dart';
 import '../../core/models/balance_snapshot.dart';
 import '../../core/models/provider_id.dart';
 import '../../core/providers/balance_exception.dart';
 import '../../core/providers/provider_adapter.dart';
 import '../../core/repository/account_repository.dart';
 import '../../core/repository/credential_store.dart';
+import '../../core/repository/settings_repository.dart';
 
 /// 单个账户的余额展示状态。
 class AccountBalanceState {
@@ -32,19 +35,37 @@ class AccountsController extends ChangeNotifier {
     required AccountRepository repository,
     required CredentialStore credentialStore,
     required Map<ProviderId, ProviderAdapter> adapters,
-  }) : this._(repository, credentialStore, adapters);
+    required SettingsRepository settingsRepository,
+    int autoRefreshMinutes = 10,
+  }) : this._(
+         repository,
+         credentialStore,
+         adapters,
+         settingsRepository,
+         autoRefreshMinutes,
+       );
 
-  AccountsController._(this._repository, this._credentialStore, this._adapters);
+  AccountsController._(
+    this._repository,
+    this._credentialStore,
+    this._adapters,
+    this._settingsRepository,
+    this._autoRefreshMinutes,
+  );
 
   final AccountRepository _repository;
   final CredentialStore _credentialStore;
   final Map<ProviderId, ProviderAdapter> _adapters;
+  final SettingsRepository _settingsRepository;
   final Random _random = Random();
 
   List<AccountBalanceState> _accounts = [];
   bool _loadingAccounts = false;
   bool _refreshing = false;
   String? _loadError;
+  int _autoRefreshMinutes;
+  bool _autoRefreshStarted = false;
+  Timer? _autoRefreshTimer;
 
   List<AccountBalanceState> get accounts => List.unmodifiable(_accounts);
 
@@ -53,6 +74,59 @@ class AccountsController extends ChangeNotifier {
   bool get refreshing => _refreshing;
 
   String? get loadError => _loadError;
+
+  /// 自动刷新间隔（分钟），0 表示关闭。
+  int get autoRefreshMinutes => _autoRefreshMinutes;
+
+  /// 启动定时轮询。
+  void startAutoRefresh() {
+    if (_autoRefreshStarted) {
+      return;
+    }
+    _autoRefreshStarted = true;
+    _restartAutoRefreshTimer();
+  }
+
+  /// 修改自动刷新间隔并持久化。
+  Future<void> setAutoRefreshMinutes(int minutes) async {
+    if (!kAutoRefreshOptions.contains(minutes) ||
+        minutes == _autoRefreshMinutes) {
+      return;
+    }
+
+    final previous = _autoRefreshMinutes;
+    _autoRefreshMinutes = minutes;
+    try {
+      await _settingsRepository.save(AppSettings(autoRefreshMinutes: minutes));
+    } catch (error) {
+      _autoRefreshMinutes = previous;
+      rethrow;
+    }
+
+    if (_autoRefreshStarted) {
+      _restartAutoRefreshTimer();
+    }
+    notifyListeners();
+  }
+
+  void _restartAutoRefreshTimer() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = null;
+    if (_autoRefreshMinutes <= 0) {
+      return;
+    }
+
+    _autoRefreshTimer = Timer.periodic(
+      Duration(minutes: _autoRefreshMinutes),
+      (_) => unawaited(refreshAll()),
+    );
+  }
+
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    super.dispose();
+  }
 
   /// 读取账户元数据。
   Future<void> load() async {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/models/app_settings.dart';
 import '../state/accounts_controller.dart';
 
 /// 余额总览页。
@@ -17,6 +18,20 @@ class OverviewPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('总览'),
         actions: [
+          PopupMenuButton<int>(
+            tooltip: _tooltipLabel(controller.autoRefreshMinutes),
+            icon: const Icon(Icons.timer_outlined),
+            onSelected: (minutes) =>
+                _selectInterval(context, controller, minutes),
+            itemBuilder: (context) => [
+              for (final minutes in kAutoRefreshOptions)
+                CheckedPopupMenuItem<int>(
+                  value: minutes,
+                  checked: minutes == controller.autoRefreshMinutes,
+                  child: Text(_intervalLabel(minutes)),
+                ),
+            ],
+          ),
           IconButton(
             onPressed: controller.refreshing || controller.accounts.isEmpty
                 ? null
@@ -34,6 +49,29 @@ class OverviewPage extends StatelessWidget {
       ),
       body: _buildBody(context, controller),
     );
+  }
+
+  Future<void> _selectInterval(
+    BuildContext context,
+    AccountsController controller,
+    int minutes,
+  ) async {
+    try {
+      await controller.setAutoRefreshMinutes(minutes);
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('保存自动刷新设置失败：$error')));
+      }
+    }
+  }
+
+  static String _intervalLabel(int minutes) {
+    return minutes == 0 ? '关闭自动刷新' : '$minutes 分钟';
+  }
+
+  static String _tooltipLabel(int minutes) {
+    return minutes == 0 ? '自动刷新：已关闭' : '自动刷新：$minutes 分钟';
   }
 
   Widget _buildBody(BuildContext context, AccountsController controller) {

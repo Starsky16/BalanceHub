@@ -1,25 +1,29 @@
+import 'package:balancehub/app.dart';
 import 'package:balancehub/core/models/balance_snapshot.dart';
 import 'package:balancehub/core/models/provider_id.dart';
 import 'package:balancehub/core/providers/balance_exception.dart';
 import 'package:balancehub/ui/state/accounts_controller.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:balancehub/app.dart';
 
 import '../support/fakes.dart';
 
 void main() {
   late MemoryAccountRepository repository;
   late MemoryCredentialStore credentialStore;
+  late MemorySettingsRepository settingsRepository;
   late FakeAdapter adapter;
   late AccountsController controller;
 
   setUp(() {
     repository = MemoryAccountRepository();
     credentialStore = MemoryCredentialStore();
+    settingsRepository = MemorySettingsRepository();
     adapter = FakeAdapter(id: ProviderId.deepSeek);
     controller = AccountsController(
       repository: repository,
       credentialStore: credentialStore,
+      settingsRepository: settingsRepository,
       adapters: {ProviderId.deepSeek: adapter},
     );
   });
@@ -80,5 +84,19 @@ void main() {
 
     expect(find.text('Key 无效或已被删除'), findsOneWidget);
     expect(find.text('¥ 100.00'), findsOneWidget);
+  });
+
+  testWidgets('可切换自动刷新间隔', (tester) async {
+    await addAccount();
+    await tester.pumpWidget(BalanceHubApp(controller: controller));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('自动刷新：10 分钟'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(CheckedPopupMenuItem<int>, '5 分钟'));
+    await tester.pumpAndSettle();
+
+    expect(controller.autoRefreshMinutes, 5);
+    expect(settingsRepository.settings.autoRefreshMinutes, 5);
   });
 }

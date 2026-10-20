@@ -1,4 +1,5 @@
 import 'package:balancehub/core/models/account_config.dart';
+import 'package:balancehub/core/models/app_settings.dart';
 import 'package:balancehub/core/models/balance_snapshot.dart';
 import 'package:balancehub/core/models/provider_id.dart';
 import 'package:balancehub/core/providers/balance_exception.dart';
@@ -63,5 +64,37 @@ void main() {
       const BalanceException(BalanceErrorKind.invalidResponse).userMessage,
       '响应异常，适配器待更新',
     );
+  });
+
+  group('AppSettings', () {
+    test('默认 10 分钟', () {
+      expect(const AppSettings().autoRefreshMinutes, 10);
+    });
+
+    test('合法值原样保留', () {
+      expect(
+        AppSettings.fromJson(const {'autoRefreshMinutes': 0})
+            .autoRefreshMinutes,
+        0,
+      );
+      expect(
+        AppSettings.fromJson(const {'autoRefreshMinutes': 30})
+            .autoRefreshMinutes,
+        30,
+      );
+    });
+
+    test('非法值回落默认', () {
+      expect(
+        AppSettings.fromJson(const {'autoRefreshMinutes': 7})
+            .autoRefreshMinutes,
+        10,
+      );
+      expect(
+        AppSettings.fromJson(const {'autoRefreshMinutes': '5'})
+            .autoRefreshMinutes,
+        10,
+      );
+    });
   });
 }

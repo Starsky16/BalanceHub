@@ -8,6 +8,7 @@ import 'core/providers/deepseek_adapter.dart';
 import 'core/providers/kimi_adapter.dart';
 import 'core/providers/silicon_flow_adapter.dart';
 import 'data/json_account_repository.dart';
+import 'data/json_settings_repository.dart';
 import 'data/secure_credential_store.dart';
 import 'ui/state/accounts_controller.dart';
 
@@ -15,10 +16,14 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final directory = await getApplicationSupportDirectory();
+  final settingsRepository = JsonSettingsRepository(directory);
+  final settings = await settingsRepository.load();
   final client = http.Client();
   final controller = AccountsController(
     repository: JsonAccountRepository(directory),
     credentialStore: SecureCredentialStore(),
+    settingsRepository: settingsRepository,
+    autoRefreshMinutes: settings.autoRefreshMinutes,
     adapters: {
       ProviderId.deepSeek: DeepSeekAdapter(client: client),
       ProviderId.kimi: KimiAdapter(client: client),
@@ -29,7 +34,8 @@ Future<void> main() async {
 
   runApp(BalanceHubApp(controller: controller));
 
-  // 启动后自动刷新一次；界面先渲染，卡片进入加载态。
+  // 启动后自动刷新一次，并按设置的间隔定时刷新。
+  controller.startAutoRefresh();
   if (controller.accounts.isNotEmpty) {
     await controller.refreshAll();
   }

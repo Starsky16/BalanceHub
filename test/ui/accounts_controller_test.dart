@@ -9,6 +9,7 @@ import '../support/fakes.dart';
 void main() {
   late MemoryAccountRepository repository;
   late MemoryCredentialStore credentialStore;
+  late MemorySettingsRepository settingsRepository;
   late FakeAdapter adapter;
   late AccountsController controller;
   late BalanceSnapshot snapshot;
@@ -16,10 +17,12 @@ void main() {
   setUp(() {
     repository = MemoryAccountRepository();
     credentialStore = MemoryCredentialStore();
+    settingsRepository = MemorySettingsRepository();
     adapter = FakeAdapter(id: ProviderId.deepSeek);
     controller = AccountsController(
       repository: repository,
       credentialStore: credentialStore,
+      settingsRepository: settingsRepository,
       adapters: {ProviderId.deepSeek: adapter},
     );
     snapshot = BalanceSnapshot(
@@ -112,5 +115,26 @@ void main() {
 
     expect(controller.loadError, isNotNull);
     expect(controller.accounts, isEmpty);
+  });
+
+  test('修改自动刷新间隔并持久化', () async {
+    await controller.setAutoRefreshMinutes(5);
+
+    expect(controller.autoRefreshMinutes, 5);
+    expect(settingsRepository.settings.autoRefreshMinutes, 5);
+  });
+
+  test('非法间隔被忽略', () async {
+    await controller.setAutoRefreshMinutes(7);
+
+    expect(controller.autoRefreshMinutes, 10);
+    expect(settingsRepository.settings.autoRefreshMinutes, 10);
+  });
+
+  test('可以关闭自动刷新', () async {
+    await controller.setAutoRefreshMinutes(0);
+
+    expect(controller.autoRefreshMinutes, 0);
+    expect(settingsRepository.settings.autoRefreshMinutes, 0);
   });
 }

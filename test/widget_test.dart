@@ -10,6 +10,7 @@ AccountsController _controller() {
   return AccountsController(
     repository: MemoryAccountRepository(),
     credentialStore: MemoryCredentialStore(),
+    settingsRepository: MemorySettingsRepository(),
     adapters: {ProviderId.deepSeek: FakeAdapter(id: ProviderId.deepSeek)},
   );
 }
