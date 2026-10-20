@@ -14,8 +14,6 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   static const double _wideBreakpoint = 720;
 
-  static const List<Widget> _pages = [OverviewPage(), AccountsPage()];
-
   int _index = 0;
 
   void _select(int index) => setState(() => _index = index);
@@ -23,6 +21,10 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     final isWide = MediaQuery.sizeOf(context).width >= _wideBreakpoint;
+    final pages = [
+      OverviewPage(onGoToAccounts: () => _select(1)),
+      const AccountsPage(),
+    ];
 
     if (isWide) {
       return Scaffold(
@@ -46,14 +48,14 @@ class _AppShellState extends State<AppShell> {
               ],
             ),
             const VerticalDivider(width: 1),
-            Expanded(child: _pages[_index]),
+            Expanded(child: pages[_index]),
           ],
         ),
       );
     }
 
     return Scaffold(
-      body: _pages[_index],
+      body: pages[_index],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: _select,
