@@ -4,6 +4,10 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// dev 预发布包（CI 设 DEV_BUILD=true）使用 .dev 包名后缀，
+// 作为独立应用与正式版并存安装；正式发版不设该环境变量，包名保持不变。
+val devBuild = System.getenv("DEV_BUILD") == "true"
+
 android {
     namespace = "com.starsky16.balancehub"
     compileSdk = flutter.compileSdkVersion
@@ -31,6 +35,9 @@ android {
 
     buildTypes {
         release {
+            if (devBuild) {
+                applicationIdSuffix = ".dev"
+            }
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")

@@ -74,7 +74,9 @@ jobs:
 
       - run: flutter pub get
 
-      - name: 构建 APK（调试签名）
+      - name: 构建 APK（调试签名 + .dev 包名，可与正式版并存）
+        env:
+          DEV_BUILD: 'true'
         run: |
           BASE_VERSION=$(sed -n 's/^version: \([^+]*\).*/\1/p' pubspec.yaml)
           flutter build apk --release \
@@ -187,12 +189,12 @@ jobs:
           产物：
 
           - Windows x64 便携版（zip，解压后运行 balancehub.exe）
-          - Android 通用 APK（release 模式，调试签名）
+          - Android 通用 APK（release 模式，调试签名，包名带 .dev 后缀）
           - Linux x64 / arm64（tar.gz，解压后运行 BalanceHub/balancehub）
 
           注意：
 
-          - dev 包为调试签名版本，仅供测试
+          - dev 包为调试签名版本，仅供测试；Android dev 包包名带 .dev 后缀，可与正式版并存安装（数据互不相通）
           - Linux 运行需 libsecret-1-0 与可用 Keyring
 
           校验和见 SHA256SUMS.txt。
