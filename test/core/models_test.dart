@@ -1,6 +1,7 @@
 import 'package:balancehub/core/models/account_config.dart';
 import 'package:balancehub/core/models/app_settings.dart';
 import 'package:balancehub/core/models/balance_snapshot.dart';
+import 'package:balancehub/core/models/manual_balance.dart';
 import 'package:balancehub/core/models/provider_id.dart';
 import 'package:balancehub/core/providers/balance_exception.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -27,12 +28,34 @@ void main() {
         throwsFormatException,
       );
     });
+
+    test('手动余额账户 JSON 往返', () {
+      final account = AccountConfig(
+        id: 'acc-manual',
+        providerId: ProviderId.manual,
+        remark: '智谱',
+        manualBalance: ManualBalance(
+          amount: 12.5,
+          currency: 'CNY',
+          updatedAt: DateTime.utc(2026, 10, 21, 12),
+        ),
+      );
+
+      final restored = AccountConfig.fromJson(account.toJson());
+
+      expect(restored.providerId, ProviderId.manual);
+      expect(restored.isManual, isTrue);
+      expect(restored.manualBalance?.amount, 12.5);
+      expect(restored.manualBalance?.currency, 'CNY');
+      expect(restored.manualBalance?.updatedAt, DateTime.utc(2026, 10, 21, 12));
+    });
   });
 
   group('ProviderId', () {
     test('按稳定标识还原厂商', () {
       expect(ProviderId.fromWireName('kimi'), ProviderId.kimi);
       expect(ProviderId.fromWireName('siliconflow'), ProviderId.siliconFlow);
+      expect(ProviderId.fromWireName('manual'), ProviderId.manual);
     });
 
     test('未知标识抛出 ArgumentError', () {
@@ -64,6 +87,23 @@ void main() {
       const BalanceException(BalanceErrorKind.invalidResponse).userMessage,
       '响应异常，适配器待更新',
     );
+  });
+
+  group('ManualBalance', () {
+    test('缺少字段时抛出 FormatException', () {
+      expect(() => ManualBalance.fromJson(const {}), throwsFormatException);
+    });
+
+    test('时间格式非法时抛出 FormatException', () {
+      expect(
+        () => ManualBalance.fromJson(const {
+          'amount': 1,
+          'currency': 'CNY',
+          'updatedAt': 'bad',
+        }),
+        throwsFormatException,
+      );
+    });
   });
 
   group('AppSettings', () {

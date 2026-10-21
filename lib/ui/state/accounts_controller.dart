@@ -7,6 +7,7 @@ import '../../core/models/account_config.dart';
 import '../../core/models/api_credentials.dart';
 import '../../core/models/app_settings.dart';
 import '../../core/models/balance_snapshot.dart';
+import '../../core/models/manual_balance.dart';
 import '../../core/models/provider_id.dart';
 import '../../core/providers/balance_exception.dart';
 import '../../core/providers/provider_adapter.dart';
@@ -135,9 +136,13 @@ class AccountsController extends ChangeNotifier {
     notifyListeners();
     try {
       final configs = await _repository.loadAll();
-      _accounts = configs
-          .map((config) => AccountBalanceState(account: config))
-          .toList();
+      _accounts = configs.map((config) {
+        final state = AccountBalanceState(account: config);
+        if (config.isManual && config.manualBalance != null) {
+          state.snapshot = _snapshotFromManual(config.manualBalance!);
+        }
+        return state;
+      }).toList();
     } catch (error) {
       _loadError = '账户数据读取失败：$error';
     } finally {
@@ -146,47 +151,71 @@ class AccountsController extends ChangeNotifier {
     }
   }
 
-  /// 新增账户：先写安全存储，再落账户元数据。
+  /// 新增账户：API 账户先写安全存储，手动账户直接记录余额。
   Future<void> addAccount({
     required ProviderId providerId,
     required String remark,
     required String apiKey,
+    ManualBalance? manualBalance,
   }) async {
+    final isManual = providerId == ProviderId.manual;
+    if (isManual && manualBalance == null) {
+      throw ArgumentError('手动账户需要填写余额');
+    }
+
     final id =
         '${DateTime.now().microsecondsSinceEpoch}-${_random.nextInt(1 << 32)}';
     final config = AccountConfig(
       id: id,
       providerId: providerId,
       remark: remark.trim(),
+      manualBalance: isManual ? manualBalance : null,
     );
 
-    await _credentialStore.write(id, apiKey.trim());
-    _accounts = [..._accounts, AccountBalanceState(account: config)];
+    if (!isManual) {
+      await _credentialStore.write(id, apiKey.trim());
+    }
+
+    final state = AccountBalanceState(account: config);
+    if (isManual) {
+      state.snapshot = _snapshotFromManual(manualBalance!);
+    }
+    _accounts = [..._accounts, state];
     await _persist();
     notifyListeners();
   }
 
-  /// 编辑账户；[apiKey] 为空表示保留原 Key。
+  /// 编辑账户；API 账户的 [apiKey] 为空表示保留原 Key。
   Future<void> updateAccount({
     required String id,
     required String remark,
     String? apiKey,
+    ManualBalance? manualBalance,
   }) async {
     final index = _accounts.indexWhere((state) => state.account.id == id);
     if (index < 0) {
       return;
     }
 
-    if (apiKey != null && apiKey.trim().isNotEmpty) {
+    final current = _accounts[index].account;
+    final isManual = current.isManual;
+
+    if (!isManual && apiKey != null && apiKey.trim().isNotEmpty) {
       await _credentialStore.write(id, apiKey.trim());
     }
 
-    final current = _accounts[index].account;
     _accounts[index].account = AccountConfig(
       id: current.id,
       providerId: current.providerId,
       remark: remark.trim(),
+      manualBalance: isManual ? (manualBalance ?? current.manualBalance) : null,
     );
+    if (isManual) {
+      final value = _accounts[index].account.manualBalance;
+      if (value != null) {
+        _accounts[index].snapshot = _snapshotFromManual(value);
+      }
+    }
     await _persist();
     notifyListeners();
   }
@@ -223,6 +252,19 @@ class AccountsController extends ChangeNotifier {
 
   Future<void> _refreshOne(AccountBalanceState state) async {
     try {
+      if (state.account.isManual) {
+        final manual = state.account.manualBalance;
+        if (manual == null) {
+          throw const BalanceException(
+            BalanceErrorKind.unknown,
+            detail: '手动账户缺少余额',
+          );
+        }
+        state.snapshot = _snapshotFromManual(manual);
+        state.error = null;
+        return;
+      }
+
       final apiKey = await _credentialStore.read(state.account.id);
       if (apiKey == null || apiKey.isEmpty) {
         throw const BalanceException(
@@ -254,6 +296,14 @@ class AccountsController extends ChangeNotifier {
       state.isLoading = false;
       notifyListeners();
     }
+  }
+
+  BalanceSnapshot _snapshotFromManual(ManualBalance manual) {
+    return BalanceSnapshot(
+      totalAvailable: manual.amount,
+      currency: manual.currency,
+      fetchedAt: manual.updatedAt,
+    );
   }
 
   Future<void> _persist() {

@@ -7,7 +7,7 @@
 ## 当前状态
 
 - v1 MVP 已实现：DeepSeek / Kimi（Moonshot）/ 硅基流动余额查询、账户增删改、启动自动刷新 + 可配置定时轮询、余额卡片总览
-- v1.1 规划：无 API 厂商手动余额录入、实验性 WebView 读取
+- v1.1：无 API 厂商手动余额录入（已实现）、实验性 WebView 读取（待实现）
 - v2 / v3 规划：签名类厂商（阿里百炼、火山方舟）、阈值告警、快照历史与趋势曲线
 
 ## 支持的厂商
@@ -17,7 +17,7 @@
 | DeepSeek | `GET https://api.deepseek.com/user/balance` | Bearer Key | v1 |
 | Kimi / Moonshot | `GET https://api.moonshot.cn/v1/users/me/balance` | Bearer Key | v1 |
 | 硅基流动 | `GET https://api.siliconflow.cn/v1/user/info` | Bearer Key | v1 |
-| 智谱 bigmodel.cn | 官方未公开余额 API | — | v1.1 手动录入 |
+| 智谱 bigmodel.cn | 官方未公开余额 API | — | 手动录入（已支持） |
 | 阿里百炼 | 阿里云 BSS `QueryAccountBalance` | AccessKey 签名 | v2 |
 | 火山方舟 | 火山费用中心 `QueryBalanceAcct` | AK/SK 签名 | v2 |
 
@@ -25,9 +25,10 @@
 
 ## 使用
 
-1. 在「账户管理」点右下角加号，选择厂商、填写备注并粘贴 API Key
+1. 在「账户管理」点右下角加号：API 账户选择厂商并粘贴 Key；无 API 的厂商选择「手动余额」，填写当前余额与币种
 2. 回到「总览」，启动时会自动刷新一次，之后默认每 10 分钟刷新；右上角计时器菜单可改为 5/15/30 分钟或关闭，也可随时点刷新按钮
 3. 各账户并行刷新，单家失败不影响其他账户；失败时卡片保留上次成功余额并标注原因，Key 无效、限流、网络与解析异常会分别提示
+4. 手动余额账户不发起网络请求，在「账户管理」编辑账户即可更新余额
 
 API Key 仅写入系统安全存储（Windows DPAPI / Android Keystore / Linux libsecret），账户元数据以 JSON 保存在应用支持目录。
 

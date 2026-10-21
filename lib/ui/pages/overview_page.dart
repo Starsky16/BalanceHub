@@ -120,6 +120,7 @@ class _AccountCard extends StatelessWidget {
     final theme = Theme.of(context);
     final snapshot = state.snapshot;
     final hasError = state.error != null;
+    final isManual = state.account.isManual;
     final amountColor = hasError && snapshot != null
         ? theme.colorScheme.onSurface.withValues(alpha: 0.45)
         : theme.colorScheme.onSurface;
@@ -139,6 +140,25 @@ class _AccountCard extends StatelessWidget {
                     style: theme.textTheme.titleMedium,
                   ),
                 ),
+                if (isManual) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.secondaryContainer,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '手动',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
                 if (state.isLoading)
                   const SizedBox(
                     width: 16,
@@ -179,6 +199,8 @@ class _AccountCard extends StatelessWidget {
             Text(
               snapshot == null
                   ? '尚未刷新'
+                  : isManual
+                  ? '手动录入的余额'
                   : snapshot.items
                         .map(
                           (item) =>
@@ -203,7 +225,9 @@ class _AccountCard extends StatelessWidget {
               )
             else if (snapshot != null)
               Text(
-                '更新于 ${_formatTime(snapshot.fetchedAt)}',
+                isManual
+                    ? '手动维护 · 更新于 ${_formatTime(snapshot.fetchedAt)}'
+                    : '更新于 ${_formatTime(snapshot.fetchedAt)}',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.outline,
                 ),

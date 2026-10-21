@@ -1,4 +1,5 @@
 import 'package:balancehub/core/models/balance_snapshot.dart';
+import 'package:balancehub/core/models/manual_balance.dart';
 import 'package:balancehub/core/models/provider_id.dart';
 import 'package:balancehub/core/providers/balance_exception.dart';
 import 'package:balancehub/ui/state/accounts_controller.dart';
@@ -136,5 +137,55 @@ void main() {
 
     expect(controller.autoRefreshMinutes, 0);
     expect(settingsRepository.settings.autoRefreshMinutes, 0);
+  });
+
+  test('手动账户不写 Key 且刷新使用录入余额', () async {
+    await controller.addAccount(
+      providerId: ProviderId.manual,
+      remark: '智谱',
+      apiKey: '',
+      manualBalance: ManualBalance(
+        amount: 12.5,
+        currency: 'CNY',
+        updatedAt: DateTime(2026, 10, 21, 12),
+      ),
+    );
+
+    final state = controller.accounts.single;
+    expect(state.account.isManual, isTrue);
+    expect(credentialStore.keys.containsKey(state.account.id), isFalse);
+    expect(state.snapshot?.totalAvailable, 12.5);
+
+    await controller.refreshAll();
+
+    expect(adapter.calls, 0);
+    expect(controller.accounts.single.snapshot?.totalAvailable, 12.5);
+  });
+
+  test('更新手动余额立即更新快照', () async {
+    await controller.addAccount(
+      providerId: ProviderId.manual,
+      remark: '智谱',
+      apiKey: '',
+      manualBalance: ManualBalance(
+        amount: 12.5,
+        currency: 'CNY',
+        updatedAt: DateTime(2026, 10, 21, 12),
+      ),
+    );
+    final id = controller.accounts.single.account.id;
+
+    await controller.updateAccount(
+      id: id,
+      remark: '智谱',
+      manualBalance: ManualBalance(
+        amount: 20,
+        currency: 'CNY',
+        updatedAt: DateTime(2026, 10, 22, 9),
+      ),
+    );
+
+    expect(controller.accounts.single.account.manualBalance?.amount, 20);
+    expect(controller.accounts.single.snapshot?.totalAvailable, 20);
   });
 }

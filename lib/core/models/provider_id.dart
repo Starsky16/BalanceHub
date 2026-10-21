@@ -2,7 +2,8 @@
 enum ProviderId {
   deepSeek('DeepSeek', 'deepseek'),
   kimi('Kimi / Moonshot', 'kimi'),
-  siliconFlow('硅基流动', 'siliconflow');
+  siliconFlow('硅基流动', 'siliconflow'),
+  manual('手动余额', 'manual');
 
   const ProviderId(this.displayName, this.wireName);
 

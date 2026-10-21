@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/models/account_config.dart';
+import '../../core/models/manual_balance.dart';
 import '../../core/models/provider_id.dart';
 import '../state/accounts_controller.dart';
 
@@ -96,6 +97,7 @@ class AccountsPage extends StatelessWidget {
         providerId: result.providerId,
         remark: result.remark,
         apiKey: result.apiKey,
+        manualBalance: result.manualBalance,
       );
     } catch (error) {
       if (context.mounted) {
@@ -119,6 +121,7 @@ class AccountsPage extends StatelessWidget {
         id: account.id,
         remark: result.remark,
         apiKey: result.apiKey,
+        manualBalance: result.manualBalance,
       );
     } catch (error) {
       if (context.mounted) {
@@ -212,11 +215,13 @@ class _AccountFormResult {
     required this.providerId,
     required this.remark,
     required this.apiKey,
+    this.manualBalance,
   });
 
   final ProviderId providerId;
   final String remark;
   final String apiKey;
+  final ManualBalance? manualBalance;
 }
 
 class _AccountFormDialog extends StatefulWidget {
@@ -232,23 +237,33 @@ class _AccountFormDialogState extends State<_AccountFormDialog> {
   final _formKey = GlobalKey<FormState>();
   final _remarkController = TextEditingController();
   final _keyController = TextEditingController();
+  final _amountController = TextEditingController();
 
   late ProviderId _providerId;
+  late String _currency;
   bool _showKey = false;
 
   bool get _isEditing => widget.account != null;
+
+  bool get _isManual => _providerId == ProviderId.manual;
 
   @override
   void initState() {
     super.initState();
     _providerId = widget.account?.providerId ?? ProviderId.deepSeek;
     _remarkController.text = widget.account?.remark ?? '';
+    final manual = widget.account?.manualBalance;
+    _amountController.text = manual == null
+        ? ''
+        : manual.amount.toStringAsFixed(2);
+    _currency = manual?.currency ?? 'CNY';
   }
 
   @override
   void dispose() {
     _remarkController.dispose();
     _keyController.dispose();
+    _amountController.dispose();
     super.dispose();
   }
 
@@ -256,11 +271,22 @@ class _AccountFormDialogState extends State<_AccountFormDialog> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+
+    ManualBalance? manualBalance;
+    if (_isManual) {
+      manualBalance = ManualBalance(
+        amount: double.parse(_amountController.text.trim()),
+        currency: _currency,
+        updatedAt: DateTime.now(),
+      );
+    }
+
     Navigator.of(context).pop(
       _AccountFormResult(
         providerId: _providerId,
         remark: _remarkController.text,
-        apiKey: _keyController.text,
+        apiKey: _isManual ? '' : _keyController.text,
+        manualBalance: manualBalance,
       ),
     );
   }
@@ -305,30 +331,63 @@ class _AccountFormDialogState extends State<_AccountFormDialog> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                TextFormField(
-                  controller: _keyController,
-                  obscureText: !_showKey,
-                  enableSuggestions: false,
-                  autocorrect: false,
-                  decoration: InputDecoration(
-                    labelText: 'API Key',
-                    helperText: _isEditing ? '留空则保留原 Key' : null,
-                    suffixIcon: IconButton(
-                      onPressed: () => setState(() => _showKey = !_showKey),
-                      icon: Icon(
-                        _showKey ? Icons.visibility_off : Icons.visibility,
-                      ),
-                      tooltip: _showKey ? '隐藏 Key' : '显示 Key',
+                if (_isManual) ...[
+                  TextFormField(
+                    controller: _amountController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
                     ),
+                    decoration: const InputDecoration(
+                      labelText: '当前余额',
+                      hintText: '例如：12.50',
+                    ),
+                    validator: (value) {
+                      final amount = double.tryParse(value?.trim() ?? '');
+                      if (amount == null || amount < 0) {
+                        return '请输入有效余额';
+                      }
+                      return null;
+                    },
                   ),
-                  validator: (value) {
-                    if (!_isEditing &&
-                        (value == null || value.trim().isEmpty)) {
-                      return '请粘贴 API Key';
-                    }
-                    return null;
-                  },
-                ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: _currency,
+                    decoration: const InputDecoration(labelText: '币种'),
+                    items: const [
+                      DropdownMenuItem(value: 'CNY', child: Text('CNY（人民币）')),
+                      DropdownMenuItem(value: 'USD', child: Text('USD（美元）')),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _currency = value);
+                      }
+                    },
+                  ),
+                ] else
+                  TextFormField(
+                    controller: _keyController,
+                    obscureText: !_showKey,
+                    enableSuggestions: false,
+                    autocorrect: false,
+                    decoration: InputDecoration(
+                      labelText: 'API Key',
+                      helperText: _isEditing ? '留空则保留原 Key' : null,
+                      suffixIcon: IconButton(
+                        onPressed: () => setState(() => _showKey = !_showKey),
+                        icon: Icon(
+                          _showKey ? Icons.visibility_off : Icons.visibility,
+                        ),
+                        tooltip: _showKey ? '隐藏 Key' : '显示 Key',
+                      ),
+                    ),
+                    validator: (value) {
+                      if (!_isEditing &&
+                          (value == null || value.trim().isEmpty)) {
+                        return '请粘贴 API Key';
+                      }
+                      return null;
+                    },
+                  ),
               ],
             ),
           ),

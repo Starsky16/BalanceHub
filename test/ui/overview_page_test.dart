@@ -1,5 +1,6 @@
 import 'package:balancehub/app.dart';
 import 'package:balancehub/core/models/balance_snapshot.dart';
+import 'package:balancehub/core/models/manual_balance.dart';
 import 'package:balancehub/core/models/provider_id.dart';
 import 'package:balancehub/core/providers/balance_exception.dart';
 import 'package:balancehub/ui/state/accounts_controller.dart';
@@ -98,5 +99,26 @@ void main() {
 
     expect(controller.autoRefreshMinutes, 5);
     expect(settingsRepository.settings.autoRefreshMinutes, 5);
+  });
+
+  testWidgets('手动账户显示录入余额与手动标记', (tester) async {
+    await controller.addAccount(
+      providerId: ProviderId.manual,
+      remark: '智谱',
+      apiKey: '',
+      manualBalance: ManualBalance(
+        amount: 12.5,
+        currency: 'CNY',
+        updatedAt: DateTime(2026, 10, 21, 12, 30),
+      ),
+    );
+
+    await tester.pumpWidget(BalanceHubApp(controller: controller));
+    await tester.pumpAndSettle();
+
+    expect(find.text('¥ 12.50'), findsOneWidget);
+    expect(find.text('手动'), findsOneWidget);
+    expect(find.text('手动录入的余额'), findsOneWidget);
+    expect(find.textContaining('手动维护 · 更新于'), findsOneWidget);
   });
 }
