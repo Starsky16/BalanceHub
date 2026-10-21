@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'pages/accounts_page.dart';
 import 'pages/overview_page.dart';
+import 'pages/settings_page.dart';
 
 /// 应用主框架：宽屏用 NavigationRail，窄屏用 NavigationBar。
 class AppShell extends StatefulWidget {
@@ -24,6 +25,7 @@ class _AppShellState extends State<AppShell> {
     final pages = [
       OverviewPage(onGoToAccounts: () => _select(1)),
       const AccountsPage(),
+      const SettingsPage(),
     ];
 
     if (isWide) {
@@ -44,6 +46,11 @@ class _AppShellState extends State<AppShell> {
                   icon: Icon(Icons.manage_accounts_outlined),
                   selectedIcon: Icon(Icons.manage_accounts),
                   label: Text('账户'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.settings_outlined),
+                  selectedIcon: Icon(Icons.settings),
+                  label: Text('设置'),
                 ),
               ],
             ),
@@ -69,6 +76,11 @@ class _AppShellState extends State<AppShell> {
             icon: Icon(Icons.manage_accounts_outlined),
             selectedIcon: Icon(Icons.manage_accounts),
             label: '账户',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: '设置',
           ),
         ],
       ),
