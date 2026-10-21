@@ -54,6 +54,14 @@ class _SettingsPageState extends State<SettingsPage> {
             title: Text('应用'),
             subtitle: Text('BalanceHub · 多厂商官方 API 余额聚合工具'),
           ),
+          const ListTile(
+            leading: Icon(Icons.text_fields),
+            title: Text('字体'),
+            subtitle: Text(
+              'HarmonyOS Sans（© 2021 Huawei Device Co., Ltd.，'
+              '依据 HarmonyOS Sans Fonts License Agreement）',
+            ),
+          ),
         ],
       ),
     );

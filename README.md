@@ -8,7 +8,7 @@
 
 - v1 MVP 已实现：DeepSeek / Kimi（Moonshot）/ 硅基流动余额查询、账户增删改、启动自动刷新 + 可配置定时轮询、余额卡片总览
 - v1.1：无 API 厂商手动余额录入（已实现）、实验性 WebView 读取（待实现）
-- v1.2：独立设置页与版本号展示（已实现）、内置 HarmonyOS Sans 字体（待实现）
+- v1.2：独立设置页与版本号展示（已实现）、内置 HarmonyOS Sans 字体（已实现）
 - v2 / v3 规划：签名类厂商（阿里百炼、火山方舟）、阈值告警、快照历史与趋势曲线
 
 ## 支持的厂商
@@ -32,6 +32,10 @@
 4. 手动余额账户不发起网络请求，在「账户管理」编辑账户即可更新余额
 
 API Key 仅写入系统安全存储（Windows DPAPI / Android Keystore / Linux libsecret），账户元数据以 JSON 保存在应用支持目录。
+
+## 字体
+
+应用内置 HarmonyOS Sans SC（`assets/fonts/HarmonyOS_Sans_SC.ttf`），统一 Windows / Linux / Android 的字体渲染。字体版权归 Huawei Device Co., Ltd. 所有，依据 HarmonyOS Sans Fonts License Agreement 使用；许可证全文见 `assets/fonts/LICENSE-HarmonyOS-Sans.txt`。
 
 ## 架构
 

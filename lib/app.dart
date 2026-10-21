@@ -20,12 +20,14 @@ class BalanceHubApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: seedColor),
+          fontFamily: 'HarmonyOS Sans SC',
         ),
         darkTheme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
             seedColor: seedColor,
             brightness: Brightness.dark,
           ),
+          fontFamily: 'HarmonyOS Sans SC',
         ),
         home: const AppShell(),
       ),

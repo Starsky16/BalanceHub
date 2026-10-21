@@ -40,6 +40,7 @@ void main() {
     expect(find.text('设置'), findsWidgets);
     expect(find.text('1.0.0 (1)'), findsOneWidget);
     expect(find.text('10 分钟'), findsOneWidget);
+    expect(find.textContaining('HarmonyOS Sans'), findsOneWidget);
   });
 
   testWidgets('可修改自动刷新间隔并持久化', (tester) async {
